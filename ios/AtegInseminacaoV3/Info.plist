@@ -33,8 +33,22 @@
 		<key>NSAllowsLocalNetworking</key>
 		<true/>
 	</dict>
+	<key>NSCameraUsageDescription</key>
+	<string>O aplicativo precisa acessar a câmera para tirar fotos dos atendimentos.</string>
+	<key>NSPhotoLibraryAddUsageDescription</key>
+	<string>O aplicativo precisa salvar fotos na sua galeria.</string>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>O aplicativo precisa acessar a galeria para salvar as fotos.</string>
 	<key>NSLocationWhenInUseUsageDescription</key>
-	<string></string>
+	<string>O aplicativo precisa da sua localização para traçar rotas até as propriedades e validar as visitas.</string>
+	<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
+	<string>O aplicativo utiliza sua localizção para funcionalidades relacionadas a rotas e validação de visitas.</string>
+	<key>LSApplicationQueriesSchemes</key>
+	<array>
+		<string>comgooglemaps</string>
+		<string>waze</string>
+		<string>maps</string>
+	</array>
 	<key>RCTNewArchEnabled</key>
 	<true/>
 	<key>UILaunchStoryboardName</key>

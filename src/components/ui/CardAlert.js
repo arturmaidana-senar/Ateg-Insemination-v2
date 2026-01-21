@@ -1,0 +1,36 @@
+import { View, Text, StyleSheet } from 'react-native';
+import { CheckIcon } from '../Icons/Icons';
+
+const CardCheckout = ({ title }) => {
+  return (
+    <View style={styles.card}>
+      <CheckIcon />
+      <View style={styles.cardTextContainer}>
+        <Text style={styles.cardDescription}>{title}</Text>
+      </View>
+    </View>
+  );
+};
+
+const styles = StyleSheet.create({
+  card: {
+    backgroundColor: 'white',
+    padding: 16,
+    borderRadius: 8,
+    marginBottom: 16,
+    flexDirection: 'row',
+    alignItems: 'center',
+    height: 100,
+  },
+  cardTextContainer: {
+    flex: 1,
+    marginLeft: 16,
+  },
+  cardDescription: {
+    fontSize: 16,
+    color: '#666',
+    marginTop: 4,
+  },
+});
+
+export default CardCheckout;
