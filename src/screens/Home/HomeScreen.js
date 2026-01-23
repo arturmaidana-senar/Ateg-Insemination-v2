@@ -30,39 +30,76 @@ const ASYNC_STORAGE_KEY = '@syncHistory';
 export default function Home() {
   const { logoff } = useContext(AuthContext);
   const [locationPermission, setLocationPermission] = useState(null);
+
   const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth());
+  const [displayYear, setDisplayYear] = useState(new Date().getFullYear());
+
   const [agendas, setAgendas] = useState([]);
+
+  // AGORA GUARDA VÁRIOS ANOS: { 2025: {0:1, 1:0...}, 2026: {...} }
   const [monthlyEventCounts, setMonthlyEventCounts] = useState({});
+
   const [isLoading, setIsLoading] = useState(true);
   const [hasEverSynced, setHasEverSynced] = useState(false);
 
-  async function updatedMonth(index) {
+  // --- FUNÇÃO PRINCIPAL DE ATUALIZAÇÃO ---
+  async function updateData(monthIndex, year) {
     setIsLoading(true);
     setAgendas([]);
-    setSelectedMonth(index);
-    const year = new Date().getFullYear();
+
+    setSelectedMonth(monthIndex);
+    setDisplayYear(year);
 
     try {
-      const countsPromise = getMonthlyScheduleCounts(year);
+      // 1. Carrega os agendamentos (Lista de Cards)
       const schedulesPromise = loadSchedules(
         year,
-        String(index + 1).padStart(2, '0'),
+        String(monthIndex + 1).padStart(2, '0'),
       );
 
-      const [counts, schedules] = await Promise.all([
-        countsPromise,
+      // 2. Carrega contadores de 3 ANOS (Anterior, Atual, Próximo)
+      // Isso garante que o carrossel tenha dados nas bordas (Ex: Jan 2026 mostrando Dez 2025)
+      const yearsToFetch = [year - 1, year, year + 1];
+      const countsPromises = yearsToFetch.map(y => getMonthlyScheduleCounts(y));
+
+      const [schedules, ...countsResults] = await Promise.all([
         schedulesPromise,
+        ...countsPromises,
       ]);
 
-      setMonthlyEventCounts(counts);
+      // Atualiza o estado mesclando os novos anos com o que já existia
+      setMonthlyEventCounts(prevState => {
+        const newState = { ...prevState };
+        yearsToFetch.forEach((y, index) => {
+          newState[y] = countsResults[index];
+        });
+        return newState;
+      });
+
       setAgendas(schedules);
     } catch (error) {
-      console.error('Erro ao atualizar mês:', error);
+      console.error('Erro ao atualizar dados:', error);
       setAgendas([]);
     } finally {
       setIsLoading(false);
     }
   }
+
+  const handleMonthChange = newMonthIndex => {
+    let newYear = displayYear;
+    const diff = newMonthIndex - selectedMonth;
+
+    if (diff < -6) {
+      newYear = displayYear + 1;
+    } else if (diff > 6) {
+      newYear = displayYear - 1;
+    }
+    updateData(newMonthIndex, newYear);
+  };
+
+  const handleYearChange = newYear => {
+    updateData(selectedMonth, newYear);
+  };
 
   useFocusEffect(
     useCallback(() => {
@@ -71,11 +108,9 @@ export default function Home() {
         try {
           const syncHistory = await AsyncStorage.getItem(ASYNC_STORAGE_KEY);
           setHasEverSynced(syncHistory !== null);
-
           await initializeTables();
-
-          const currentMonthIndex = new Date().getMonth();
-          await updatedMonth(currentMonthIndex);
+          const now = new Date();
+          await updateData(now.getMonth(), now.getFullYear());
         } catch (error) {
           console.error('Erro ao carregar dados iniciais:', error);
           setIsLoading(false);
@@ -104,7 +139,7 @@ export default function Home() {
 
   const handleSyncComplete = async () => {
     setIsLoading(true);
-    await updatedMonth(selectedMonth);
+    await updateData(selectedMonth, displayYear);
     setHasEverSynced(true);
   };
 
@@ -166,17 +201,16 @@ export default function Home() {
         backgroundColor="#2E6B46"
         translucent={false}
       />
-
       <Header />
-
       <View style={styles.carouselWrapper}>
         <MonthCarousel
           displayMonthIndex={selectedMonth}
-          onMonthChange={updatedMonth}
+          displayYear={displayYear}
+          onMonthChange={handleMonthChange}
+          onYearChange={handleYearChange}
           monthlyEventCounts={monthlyEventCounts}
         />
       </View>
-
       <ScrollView
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
