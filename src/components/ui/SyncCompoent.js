@@ -13,9 +13,8 @@ import NetInfo from '@react-native-community/netinfo';
 import { ms } from 'react-native-size-matters';
 import Icon from 'react-native-vector-icons/MaterialIcons';
 
-// --- IMPORTS DA LÓGICA (DO CÓDIGO ANTIGO) ---
-import api from '../../services/endpont'; // Verifique se o caminho está certo
-import db from '../../database/db'; // Importe o DB para registrar o log de sync
+import api from '../../services/endpont';
+import db from '../../database/db';
 import {
   saveSchedules,
   saveJustification,
@@ -29,7 +28,6 @@ import {
 } from '../../database/modelSynchronize';
 import { AuthContext } from '../../contexts/auth';
 
-// --- IMPORTS VISUAIS ---
 import { Refresh, CheckIcon } from '../Icons/Icons';
 
 const SyncDisabledIcon = ({ size = 24, color = '#008346' }) => (
@@ -53,11 +51,8 @@ export default function SyncComponent({ onSyncComplete, onSessionExpired }) {
   const progress = useRef(new Animated.Value(0)).current;
   const { logoff } = useContext(AuthContext);
 
-  // --- FUNÇÕES AUXILIARES DO CÓDIGO ANTIGO ---
-
   const getCurrentDateTime = () => {
     const now = new Date();
-    // Formato SQL: YYYY-MM-DD HH:MM:SS
     return now.toISOString().slice(0, 19).replace('T', ' ');
   };
 
@@ -94,7 +89,7 @@ export default function SyncComponent({ onSyncComplete, onSessionExpired }) {
           },
           (_, error) => {
             console.log('❌ Erro ao finalizar tabela Synchronize: ', error);
-            reject(error); // Não rejeita para não travar o fluxo, mas loga
+            reject(error);
           },
         );
       });
@@ -113,7 +108,6 @@ export default function SyncComponent({ onSyncComplete, onSessionExpired }) {
 
       for (const visit of visitPendingSents) {
         const imageSent = await listImagePending(visit);
-        // Aqui usamos a API importada. Verifique se o método postVisita existe nela.
         await api.postVisita(imageSent);
         await updateInseminacaoPending(visit.id);
       }
@@ -123,11 +117,8 @@ export default function SyncComponent({ onSyncComplete, onSessionExpired }) {
         '⚠️ Erro ao enviar visitas (pode seguir com o download): ',
         error,
       );
-      // Não lançamos erro aqui para não impedir o usuário de baixar a agenda nova
     }
   };
-
-  // -------------------------------------------
 
   useEffect(() => {
     NetInfo.fetch().then(state => {
@@ -157,7 +148,6 @@ export default function SyncComponent({ onSyncComplete, onSessionExpired }) {
       return;
     }
 
-    // Validação de Sessão
     try {
       await api.getUsuario();
     } catch (error) {
@@ -173,34 +163,45 @@ export default function SyncComponent({ onSyncComplete, onSessionExpired }) {
       return;
     }
 
-    // Início visual da sync
     setSyncState('syncing');
     setSyncMessage('Preparando sincronização...');
     progress.setValue(0);
 
-    // Animação de progresso visual (3.5s estimado)
     Animated.timing(progress, {
       toValue: 1,
-      duration: 5000, // Aumentei um pouco pois agora faz mais coisas
+      duration: 5000,
       useNativeDriver: false,
     }).start();
 
     let syncId = null;
 
     try {
-      // 1. Inicia Registro no Banco (Lógica Antiga)
+      // ==========================================================
+      // CORREÇÃO CRÍTICA AQUI:
+      // 1. PRIMEIRO verificamos a data da última sync (antes de criar uma nova)
+      // ==========================================================
+      let dateLast = await getLastSynchronization();
+
+      // Se dateLast for null (celular novo ou nunca sincronizou),
+      // forçamos uma data bem antiga (Ex: 2020) para baixar TODO o histórico.
+      if (!dateLast) {
+        console.log(
+          '🆕 Nenhuma sincronização anterior encontrada. Baixando histórico completo.',
+        );
+        dateLast = '2020-01-01';
+      } else {
+        // Se já existe data, faz o sanitize
+        if (dateLast.includes('T')) dateLast = dateLast.split('T')[0];
+      }
+
+      console.log('📅 Data base para busca na API:', dateLast);
+
+      // ==========================================================
+      // 2. AGORA iniciamos o registro no banco (que vai gerar a data de "agora")
+      // ==========================================================
       syncId = await startSynchronization();
 
-      // 2. Busca Data da Última Sync (Lógica Antiga)
-      let dateLast = await getLastSynchronization();
-      if (!dateLast) dateLast = '2024-01-01'; // Default seguro
-
-      // Sanitização básica pra iOS caso o getLast retorne formato estranho
-      if (dateLast.includes('T')) dateLast = dateLast.split('T')[0];
-
-      console.log('📅 Data usada para busca:', dateLast);
-
-      // 3. Envia Pendências (Upload) - Importante vir antes do download ou logo no início
+      // 3. Envia Pendências
       await sendInseminacaoVisits();
 
       // 4. Baixa e Salva Usuários
@@ -221,11 +222,11 @@ export default function SyncComponent({ onSyncComplete, onSessionExpired }) {
 
       // 6. Baixa e Salva Agendas
       setSyncMessage('Atualizando sua agenda...');
+      // Agora dateLast é garantidamente uma data antiga se for a primeira vez
       const insemincao = await api.getInsemincaoVisita(dateLast);
-      // Aqui chama a função saveSchedules que corrigimos anteriormente (com a sanitização de data)
       await saveSchedules(insemincao.data);
 
-      // 7. Finaliza Registro no Banco (Lógica Antiga)
+      // 7. Finaliza Registro no Banco
       if (syncId) {
         await endSynchronization(syncId);
       }
@@ -238,7 +239,6 @@ export default function SyncComponent({ onSyncComplete, onSessionExpired }) {
       const newHistory = [newSyncDate.toISOString(), ...oldHistory];
       await AsyncStorage.setItem(ASYNC_STORAGE_KEY, JSON.stringify(newHistory));
 
-      // Sucesso Total
       progress.setValue(1);
       setSyncState('complete');
       setSyncMessage('Sincronização realizada com sucesso!');

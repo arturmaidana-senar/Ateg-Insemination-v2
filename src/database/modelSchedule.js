@@ -2,19 +2,16 @@ import db from './db';
 
 /**
  * 1. CONTAGEM POR MÊS (Para o Carrossel da Home)
- * Retorna Promise. Usa substr para funcionar no iOS.
+ * CORREÇÃO: Removido filtro de schedule_status para contar também os realizados/passados.
  */
 export const getMonthlyScheduleCounts = year => {
   return new Promise((resolve, reject) => {
     db.transaction(tx => {
-      // Cria a tabela se não existir (segurança)
       tx.executeSql(
         'CREATE TABLE IF NOT EXISTS Schedules (id INTEGER PRIMARY KEY AUTOINCREMENT, DATE TEXT, status_groups_property TEXT, schedule_status TEXT);',
         [],
       );
 
-      // substr(date, 6, 2) pega o mês (ex: "01")
-      // substr(date, 1, 4) pega o ano (ex: "2024")
       const sql = `
         SELECT 
            substr(DATE, 6, 2) as month, 
@@ -22,7 +19,7 @@ export const getMonthlyScheduleCounts = year => {
          FROM Schedules
          WHERE substr(DATE, 1, 4) = ?
            AND (status_groups_property IS NULL OR status_groups_property != '3')
-           AND (schedule_status IS NULL OR schedule_status == '1')
+           -- REMOVIDO: AND (schedule_status IS NULL OR schedule_status == '1')
          GROUP BY month
       `;
 
@@ -31,12 +28,10 @@ export const getMonthlyScheduleCounts = year => {
         [String(year)],
         (_, results) => {
           const counts = {};
-          // Inicializa zerado
           for (let i = 0; i < 12; i++) counts[i] = 0;
 
           for (let i = 0; i < results.rows.length; i++) {
             const row = results.rows.item(i);
-            // Converte mês "01" para índice 0
             const monthIndex = parseInt(row.month, 10) - 1;
             if (monthIndex >= 0 && monthIndex <= 11) {
               counts[monthIndex] = row.count;
@@ -55,12 +50,11 @@ export const getMonthlyScheduleCounts = year => {
 
 /**
  * 2. LISTA MENSAL (Para a Home)
- * Retorna Promise. Traz TODOS os dados para a tela de detalhes não ficar vazia.
+ * CORREÇÃO: Agora busca tudo do mês selecionado, independente se está pendente (1) ou finalizado.
  */
 export const loadSchedules = (year, month) => {
   return new Promise((resolve, reject) => {
     db.transaction(tx => {
-      // Adicionei os campos extras do Associates e Technicians aqui
       const sql = `
             SELECT Schedules.*,
                    Associates.producer,
@@ -83,7 +77,8 @@ export const loadSchedules = (year, month) => {
             WHERE substr(Schedules.DATE, 1, 4) = ? 
             AND substr(Schedules.DATE, 6, 2) = ? 
             AND (Schedules.status_groups_property IS NULL OR Schedules.status_groups_property != '3')
-            AND (Schedules.schedule_status IS NULL OR Schedules.schedule_status == '1')
+            -- REMOVIDO PARA EXIBIR HISTÓRICO:
+            -- AND (Schedules.schedule_status IS NULL OR Schedules.schedule_status == '1')
             ORDER BY Schedules.visited ASC, Schedules.DATE ASC
       `;
 
@@ -109,11 +104,10 @@ export const loadSchedules = (year, month) => {
 
 /**
  * 3. LISTA DIÁRIA (Para tela "Em Execução")
- * Mantém o padrão de callback (setAgendas) que sua tela antiga usa.
+ * Também ajustado para garantir consistência.
  */
 export const loadDateSchedules = (setAgendas, date) => {
   db.transaction(tx => {
-    // Também adicionei os campos extras aqui para garantir
     const sql = `
             SELECT Schedules.*,
                    Associates.producer,
@@ -133,11 +127,11 @@ export const loadDateSchedules = (setAgendas, date) => {
             LEFT JOIN Inseminacao_visits ON (inseminacao_schedule_id = Schedules.id)
             WHERE substr(Schedules.DATE, 1, 10) = ? 
             AND (Schedules.status_groups_property IS NULL OR Schedules.status_groups_property != '3')
-            AND (Schedules.schedule_status IS NULL OR Schedules.schedule_status == '1')
+            -- REMOVIDO AQUI TAMBÉM
+            -- AND (Schedules.schedule_status IS NULL OR Schedules.schedule_status == '1')
             ORDER BY Schedules.visited ASC, Schedules.DATE ASC
     `;
 
-    // Se date vier como ISO (com T), pegamos só a data
     const dateFilter = date.includes('T') ? date.split('T')[0] : date;
 
     tx.executeSql(
@@ -157,11 +151,10 @@ export const loadDateSchedules = (setAgendas, date) => {
 };
 
 /**
- * 4. BUSCAR POR ID (Para garantir detalhes se recarregar a tela)
- * Usa callback setSchedule (padrão antigo).
+ * 4. BUSCAR POR ID
  */
 export const getScheduleId = (setSchedule, id) => {
-  setSchedule([]); // Limpa antes de buscar
+  setSchedule([]);
   db.transaction(tx => {
     const sql = `
             SELECT Schedules.*,
@@ -196,7 +189,6 @@ export const getScheduleId = (setSchedule, id) => {
   });
 };
 
-// Mantivemos esta auxiliar caso precise
 export const getLastSchedule = () => {
   return new Promise((resolve, reject) => {
     db.transaction(tx => {

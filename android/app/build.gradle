@@ -77,13 +77,13 @@ android {
     buildToolsVersion rootProject.ext.buildToolsVersion
     compileSdk rootProject.ext.compileSdkVersion
 
-    namespace "com.senarmt.ateginseminacao"
+    namespace "com.ateginseminacaov3"
     defaultConfig {
-        applicationId "com.senarmt.ateginseminacao"
+        applicationId "com.ateginseminacaov3"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
-        versionCode 10
-        versionName "1.002.00"
+        versionCode 1
+        versionName "1.000.00"
     }
     signingConfigs {
         debug {
@@ -112,6 +112,9 @@ android {
             minifyEnabled enableProguardInReleaseBuilds
             proguardFiles getDefaultProguardFile("proguard-android.txt"), "proguard-rules.pro"
         }
+    }
+     buildFeatures {
+        buildConfig true
     }
 }
 
