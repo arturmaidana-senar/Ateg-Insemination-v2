@@ -18,6 +18,29 @@ export function useAttendanceActions(
   const [actionLoading, setActionLoading] = useState(false);
   const [loadingMessage, setLoadingMessage] = useState('');
 
+  // --- FUNÇÃO AUXILIAR PARA CORRIGIR A DATA ANTES DE ENVIAR ---
+  const fixDateFormat = dateStr => {
+    if (!dateStr) return new Date().toISOString().slice(0, 19); // Já retorna com T
+
+    if (dateStr.match(/^\d{4}-\d{2}-\d{2}/)) return dateStr.replace(' ', 'T');
+
+    try {
+      const cleanStr = dateStr.replace(',', '');
+      const parts = cleanStr.split(' ');
+
+      if (parts.length >= 2) {
+        const [day, month, year] = parts[0].split('/');
+        const time = parts[1];
+        // MUDANÇA AQUI: Trocamos o espaço ' ' pelo 'T'
+        return `${year}-${month}-${day}T${time}`;
+      }
+      return dateStr;
+    } catch (e) {
+      return dateStr;
+    }
+  };
+  // -----------------------------------------------------------
+
   const getCurrentLocation = () => {
     return GetLocation.getCurrentPosition({
       enableHighAccuracy: true,
@@ -67,7 +90,6 @@ export function useAttendanceActions(
     messageText,
     imagesCount,
   ) => {
-    // Validações básicas
     if (isHaveAttendence) {
       if (!motivo)
         return Toast.show({ type: 'info', text1: 'Selecione o motivo!' });
@@ -121,15 +143,29 @@ export function useAttendanceActions(
       const responseVisita = await api.postSendVisita(inseminacaoVisit);
       if (responseVisita.error) throw new Error('Falha envio visita');
 
-      // 2. Enviar Imagens (Lógica simplificada do seu loop)
+      // 2. Enviar Imagens
       for (let img of images) {
         const formData = new FormData();
+
         formData.append('image', {
           uri: img.uri,
           type: 'image/jpeg',
           name: img.name,
         });
-        // ... appends dos dados da imagem ...
+
+        formData.append('inseminacao_schedule_id', scheduleId);
+        formData.append('name', img.name);
+
+        // --- 3. Metadados ---
+        formData.append('latitude', String(img.latitude || 0));
+        formData.append('longitude', String(img.longitude || 0));
+
+        formData.append('date_time', img.date_time);
+
+        console.log(
+          `Enviando: ID=${scheduleId} | Foto=${img.name} | Data=${img.date_time}`,
+        );
+
         await api.postSendVisitaImage(
           inseminacaoVisit.inseminacao_visit_id,
           formData,
@@ -150,10 +186,11 @@ export function useAttendanceActions(
       Toast.show({ type: 'success', text1: 'Atendimento enviado!' });
       await refreshVisit();
     } catch (error) {
+      console.log('Erro envio:', error);
       Toast.show({
         type: 'error',
         text1: 'Erro no envio',
-        text2: error.message,
+        text2: error.message || 'Verifique os dados',
       });
     } finally {
       setActionLoading(false);

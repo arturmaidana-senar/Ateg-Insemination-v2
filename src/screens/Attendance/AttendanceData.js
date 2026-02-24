@@ -113,9 +113,38 @@ export default function Service() {
                 photos.images.length,
               )
             }
-            sendService={() =>
-              actions.sendServiceToApi(photos.images, isConnected)
-            }
+            // ---------------------------------------------------------
+            // AQUI ESTÁ A MUDANÇA PARA DEBUG
+            // ---------------------------------------------------------
+            sendService={() => {
+              console.log('\n\n========== 🕵️ DEBUG PRÉ-ENVIO ==========');
+              console.log('📡 Status Conexão:', isConnected);
+              console.log('📸 Total de Imagens:', photos.images.length);
+
+              const debugPayload = photos.images.map((img, i) => ({
+                index: i,
+                uri: img.uri,
+                name: img.name,
+                // VERIFIQUE ESTA DATA: O backend aceita "YYYY-MM-DD HH:mm:ss"
+                // ou exige "YYYY-MM-DDTHH:mm:ss.000Z"?
+                date_time: img.date_time,
+                latitude: img.latitude,
+                longitude: img.longitude,
+              }));
+
+              console.log(
+                '📦 Payload de Imagens:',
+                JSON.stringify(debugPayload, null, 2),
+              );
+
+              if (photos.images.length === 0) {
+                console.warn('⚠️ AVISO: Tentando enviar sem fotos!');
+              }
+
+              // Chama a função original
+              actions.sendServiceToApi(photos.images, isConnected);
+            }}
+            // ---------------------------------------------------------
           />
         )}
         {index === 1 && (

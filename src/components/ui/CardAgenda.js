@@ -7,7 +7,6 @@ import { dataAtual } from '../../utils/date';
 
 import {
   OutlineCalendarToday,
-  CowFace,
   PersonIcon,
   ArrowRightIcon,
 } from '../Icons/Icons';
@@ -23,6 +22,27 @@ const STATUS_THEME = {
   default: { bg: '#FAFAFA', text: '#616161', borderColor: '#EEEEEE' },
 };
 
+// Configuração das cores dos Steps (D0, D8, D10, DG)
+const getStepConfig = fullText => {
+  if (!fullText) return { code: '??', bg: '#F5F5F5', text: '#9E9E9E' };
+
+  // Pega apenas a primeira parte (Ex: "D0 (Primeira...)" vira "D0")
+  const code = fullText.split(' ')[0].toUpperCase();
+
+  switch (code) {
+    case 'D0': // Verde
+      return { code, bg: '#E8F5E9', text: '#2E7D32' };
+    case 'D8': // Amarelo (Usando um tom ambar para melhor leitura no texto)
+      return { code, bg: '#FFFDE7', text: '#FBC02D' };
+    case 'D10': // Vermelho
+      return { code, bg: '#FFEBEE', text: '#C62828' };
+    case 'DG': // Azul
+      return { code, bg: '#E3F2FD', text: '#1565C0' };
+    default: // Padrão cinza
+      return { code, bg: '#F5F5F5', text: '#616161' };
+  }
+};
+
 export default function CardAgenda({
   scheduleId,
   title,
@@ -36,6 +56,9 @@ export default function CardAgenda({
   sent,
 }) {
   const navigation = useNavigation();
+
+  // Gera a configuração visual baseada no texto do protocolStep
+  const stepConfig = getStepConfig(protocolStep);
 
   const handleCardPress = async () => {
     if (status == 1 && pending == null && sent == null) {
@@ -69,17 +92,16 @@ export default function CardAgenda({
       activeOpacity={0.7}
     >
       <View style={styles.topSection}>
-        <View style={styles.bigIconCircle}>
-          <CowFace width={ms(24)} height={ms(24)} color="#2E6B46" />
+        <View
+          style={[styles.bigIconCircle, { backgroundColor: stepConfig.bg }]}
+        >
+          <Text style={[styles.stepCircleText, { color: stepConfig.text }]}>
+            {stepConfig.code}
+          </Text>
         </View>
 
         <View style={styles.headerTextContainer}>
           <View style={styles.titleRow}>
-            <View style={styles.protocolBadge}>
-              <Text style={styles.protocolText} maxFontSizeMultiplier={1.0}>
-                {protocolStep}
-              </Text>
-            </View>
             <Text
               style={styles.titleText}
               numberOfLines={1}
@@ -180,10 +202,16 @@ const styles = ScaledSheet.create({
     width: '48@ms',
     height: '48@ms',
     borderRadius: '24@ms',
-    backgroundColor: '#E8F5E9',
+    // backgroundColor removido daqui pois agora é dinâmico via style inline
     justifyContent: 'center',
     alignItems: 'center',
     marginRight: '12@ms',
+  },
+
+  stepCircleText: {
+    fontSize: '16@ms', // Tamanho fonte do código (D0, DG)
+    fontWeight: 'bold',
+    // color é dinâmico
   },
 
   headerTextContainer: {
@@ -203,14 +231,14 @@ const styles = ScaledSheet.create({
     marginBottom: '6@ms',
   },
   protocolBadge: {
-    backgroundColor: '#E8F5E9',
+    backgroundColor: '#F5F5F5', // Mudei para cinza neutro já que a cor forte está no ícone
     paddingHorizontal: '6@ms',
     paddingVertical: '2@ms',
     borderRadius: '4@ms',
     marginRight: '8@ms',
   },
   protocolText: {
-    color: '#2E6B46',
+    color: '#616161', // Texto neutro
     fontSize: '11@ms',
     fontWeight: 'bold',
   },
