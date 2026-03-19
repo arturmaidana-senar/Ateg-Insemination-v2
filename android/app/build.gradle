@@ -82,8 +82,8 @@ android {
         applicationId "com.ateginseminacaov3"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
-        versionCode 2
-        versionName "1.000.00"
+        versionCode 3
+        versionName "1.001.00"
     }
     signingConfigs {
         debug {

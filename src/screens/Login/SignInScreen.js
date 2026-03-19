@@ -116,18 +116,8 @@ export default function SignInScreen() {
       >
         <Animated.View style={{ transform: [{ translateX: logoX }] }}>
           <Image
-            source={require('../../assets/Teste4.png')}
-            style={{ width: 100, height: 100 }}
-          />
-        </Animated.View>
-        <Animated.View
-          style={{
-            transform: [{ translateX: nomeX }, { translateY: nomeY }],
-          }}
-        >
-          <Image
-            source={require('../../assets/NomeTeste.png')}
-            style={{ width: 100, height: 60 }}
+            source={require('../../assets/LogoAntiga2.png')}
+            style={{ width: 150, height: 120 }}
           />
         </Animated.View>
       </Animated.View>

@@ -66,8 +66,8 @@ export default function SplashScreen() {
         ]}
       >
         <Image
-          source={require('../../assets/Teste4.png')}
-          style={{ width: 120, height: 125 }}
+          source={require('../../assets/LogoAntiga.png')}
+          style={{ width: 140, height: 100 }}
         />
       </Animated.View>
 
@@ -81,8 +81,8 @@ export default function SplashScreen() {
         ]}
       >
         <Image
-          source={require('../../assets/NomeTeste.png')}
-          style={{ width: 120, height: 60 }}
+          source={require('../../assets/NomeOficial.png')}
+          style={{ width: 140, height: 40 }}
         />
       </Animated.View>
     </View>
