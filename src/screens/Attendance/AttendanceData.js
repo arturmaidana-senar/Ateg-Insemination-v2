@@ -63,6 +63,16 @@ export default function Service() {
     return NetInfo.addEventListener(state => setIsConnected(state.isConnected));
   }, []);
 
+  // Debug para verificar por que os atendimentos em execução não estão aparecendo
+  useEffect(() => {
+    console.log('\n\n========== 🕵️ DEBUG ATENDIMENTOS EM EXECUÇÃO ==========');
+    console.log('ID do Agendamento:', scheduleId);
+    console.log('Inseminacao Visit:', JSON.stringify(data.inseminacaoVisit, null, 2));
+    console.log('Inseminacao Visit Exist:', data.inseminacaoVisitExist);
+    console.log('Schedule Data:', JSON.stringify(data.schedule, null, 2));
+    console.log('========================================================\n\n');
+  }, [data.inseminacaoVisit, data.inseminacaoVisitExist, data.schedule, scheduleId]);
+
   const buttons = [
     { label: 'Informações', icon: CircleAlert },
     { label: 'Fotos', icon: OutlineInsertPhoto },

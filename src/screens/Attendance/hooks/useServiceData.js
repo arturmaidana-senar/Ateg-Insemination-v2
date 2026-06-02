@@ -30,6 +30,23 @@ export function useServiceData(scheduleId) {
       await getInseminacaoScheduleId(setInseminacaoVisit, scheduleId);
       await getInseminacaoScheduleExist(setInseminacaoVisitExist);
       await allJustifications(setJustifications);
+
+      // --- DEBUG EXTRA: Verificar o que tem na tabela inteira de Inseminacao_visits ---
+      import('../../../database/db').then(({ default: db }) => {
+        db.transaction(tx => {
+          tx.executeSql('SELECT * FROM Inseminacao_visits', [], (tx, results) => {
+            let rows = [];
+            for (let i = 0; i < results.rows.length; i++) {
+              rows.push(results.rows.item(i));
+            }
+            console.log('\n\n========== 🗄️ DUMP DA TABELA Inseminacao_visits ==========');
+            console.log(`Total de registros na tabela: ${rows.length}`);
+            console.log(JSON.stringify(rows, null, 2));
+            console.log('===========================================================\n\n');
+          });
+        });
+      }).catch(err => console.log('Erro ao carregar db para debug:', err));
+      // --------------------------------------------------------------------------------
     } catch (error) {
       console.log('Erro ao buscar dados:', error);
     } finally {
